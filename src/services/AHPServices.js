@@ -29,7 +29,7 @@ const AHPServices = {
       sumColumns.push(sum); // Tambahkan hasil penjumlahan ke array sumColumns
     }
 
-    console.log("Hasil Penjumlahan Tiap Kolom Matriks Berpasangan:", sumColumns);
+    // console.log("Hasil Penjumlahan Tiap Kolom Matriks Berpasangan:", sumColumns);
 
     // Langkah 2: Bagi tiap elemen matriks dengan jumlah kolom yang sesuai
     const normalizedMatrix = [];
@@ -80,7 +80,7 @@ const AHPServices = {
       let result = sum[i] / weights[i];
       lambdaVector.push(result);
     }
-    console.log("Hasil =sum/bobot kriteri:", lambdaVector);
+    // console.log("Hasil =sum/bobot kriteri:", lambdaVector);
 
     const totalSum = lambdaVector.reduce((sum, nilai) => sum + nilai, 0);
     const lambdaMax = totalSum / lambdaVector.length;
@@ -90,9 +90,9 @@ const AHPServices = {
 
   CIandCRCalculation: (lambdaMax, matrix) => {
     const CI = (lambdaMax - matrix.length) / (matrix.length - 1);
-    console.log("CI:", CI);
+    // console.log("CI:", CI);
     const CR = CI / AHPServices.nilaiIRSaaty[matrix.length];
-    console.log("CR:", CR);
+    // console.log("CR:", CR);
 
     return CR < 0.1 ? "CONSISTENT" : "NOT CONSISTENT";
   },
@@ -105,15 +105,15 @@ const AHPServices = {
     };
 
     for (const [key, matrix] of Object.entries(matrices)) {
-      console.log(`Processing AHP for: ${key}`);
+      // console.log(`Processing AHP for: ${key}`);
 
       // Normalisasi matriks
       const normalizedMatrix = AHPServices.normalizeMatrix(matrix);
-      console.log("Normalized Matrix:", normalizedMatrix);
+      // console.log("Normalized Matrix:", normalizedMatrix);
 
       // Hitung rata-rata per baris
       const avgPerRow = AHPServices.avgPerRowCalculation(normalizedMatrix);
-      console.log("Average per Row:", avgPerRow);
+      // console.log("Average per Row:", avgPerRow);
 
       let consistencyResult = "NOT APPLICABLE";
       if (matrix.length > 2) {
@@ -124,7 +124,7 @@ const AHPServices = {
 
         // Cek konsistensi matriks menggunakan IR Saaty
         consistencyResult = AHPServices.CIandCRCalculation(lambdaMax, matrix);
-        console.log("Consistency Result:", consistencyResult);
+        // console.log("Consistency Result:", consistencyResult);
       }
 
       // Pisahkan mainCriteria dan subCriteria
@@ -168,11 +168,11 @@ const AHPServices = {
 
     results.finalWeights = finalWeights;
 
-    // console.log("Bobot Final:", finalWeights);
-    console.log("Result secara keseluruhan:", results);
-    console.log("results SubCriteria: ", results.subCriteria);
-    console.log("results Main Criteria: ", results.mainCriteria);
-    console.log("results Bobot Final: ", results.finalWeights);
+    console.log("Bobot Final:", finalWeights);
+    // console.log("Result secara keseluruhan:", results);
+    // console.log("results SubCriteria: ", results.subCriteria);
+    // console.log("results Main Criteria: ", results.mainCriteria);
+    // console.log("results Bobot Final: ", results.finalWeights);
 
     return results; // Kembalikan hasil akhir untuk semua matriks
   },

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import PairwiseSlider from "../components/PairwiseSlider";
 import AHPServices from "../services/AHPServices";
+import axiosInstance from "../utils/axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 const PairwiseComparisonPage = () => {
   const [isCalculated, setIsCalculated] = useState(false);
@@ -45,6 +47,9 @@ const PairwiseComparisonPage = () => {
       [1, 1, 1, 1],
     ],
   });
+  const [isAllConsistent, setIsAllConsistent] = useState(false);
+  const [finalWeights, setFinalWeights] = useState(null);
+  const navigate = useNavigate();
 
   // Buat salinan dari pairwiseValues dengan konversi nilai negatif menjadi kebalikan
   const getTransformedPairwiseValues = () => {
@@ -167,31 +172,106 @@ const PairwiseComparisonPage = () => {
     });
   };
 
-  const startAHPCalculation = () => {
-    const symmetricValues = getSymmetricPairwiseValues();
-    console.log("Final pairwiseValues for new AHP Calculation:", symmetricValues);
-    const results = AHPServices.processAHP(symmetricValues);
-    console.log("AHP Calculation Results:", results);
-
-    const updatedConsistencyStatus = {};
-    Object.keys(results).forEach((criteriaKey) => {
-      updatedConsistencyStatus[criteriaKey] = results[criteriaKey].consistency;
-    });
-    setConsistencyStatus(updatedConsistencyStatus);
-    console.log("Status Konsistensi", updatedConsistencyStatus);
-    setIsCalculated(true);
-  };
-
-  // const renderBoxStyle = (criteriaKey) => {
-  //   return consistencyStatus[criteriaKey] ? "bg-green-300" : "bg-red-500";
-  // };
-
   const renderBoxStyle = (criteriaKey) => {
     if (!isCalculated) {
       return "bg-white"; // Warna default sebelum perhitungan dijalankan
     }
     const status = consistencyStatus[criteriaKey];
     return status === "CONSISTENT" || status === "NOT APPLICABLE" ? "bg-green-300" : "bg-red-500";
+  };
+
+  const flattenFinalWeights = (nestedWeights) => {
+    const flattenedWeights = {};
+
+    if (nestedWeights.price && nestedWeights.price.price !== undefined) {
+      flattenedWeights.price_weight = nestedWeights.price.price;
+    }
+
+    if (nestedWeights.imageQuality) {
+      flattenedWeights.pixel_weight = nestedWeights.imageQuality.pixel;
+      flattenedWeights.max_resolution_weight = nestedWeights.imageQuality.maxResolution;
+      flattenedWeights.sensor_size_weight = nestedWeights.imageQuality.sensorSize;
+    }
+
+    if (nestedWeights.performance) {
+      flattenedWeights.min_iso_weight = nestedWeights.performance.isoMin;
+      flattenedWeights.max_iso_weight = nestedWeights.performance.isoMax;
+      flattenedWeights.min_shutter_speed_weight = nestedWeights.performance.shutterSpeedMin;
+      flattenedWeights.max_shutter_speed_weight = nestedWeights.performance.shutterSpeedMax;
+      flattenedWeights.continues_drive_weight = nestedWeights.performance.continuousDrive;
+    }
+
+    if (nestedWeights.videoQuality) {
+      flattenedWeights.max_video_resolution_weight = nestedWeights.videoQuality.maxResolution;
+      flattenedWeights.max_video_fps_weight = nestedWeights.videoQuality.maxFPS;
+    }
+
+    if (nestedWeights.easeOfUse) {
+      flattenedWeights.battery_life_weight = nestedWeights.easeOfUse.batteryLife;
+      flattenedWeights.articulated_lcd_weight = nestedWeights.easeOfUse.articulatedLCD;
+      flattenedWeights.screen_dots_weight = nestedWeights.easeOfUse.screenDots;
+      flattenedWeights.weight_weight = nestedWeights.easeOfUse.weight;
+    }
+
+    return flattenedWeights;
+  };
+  const checkConsistencyForAllGroups = () => {
+    const symmetricValues = getSymmetricPairwiseValues();
+    const results = AHPServices.processAHP(symmetricValues);
+
+    console.log("Results from AHP calculation:", results);
+
+    const updatedConsistencyStatus = {};
+    let allConsistent = true;
+
+    Object.keys(results).forEach((criteriaKey) => {
+      const status = results[criteriaKey].consistency;
+      updatedConsistencyStatus[criteriaKey] = status !== undefined ? status : "CONSISTENT";
+      if (
+        updatedConsistencyStatus[criteriaKey] !== "CONSISTENT" &&
+        updatedConsistencyStatus[criteriaKey] !== "NOT APPLICABLE"
+      ) {
+        allConsistent = false;
+      }
+    });
+
+    setConsistencyStatus(updatedConsistencyStatus);
+    setIsAllConsistent(allConsistent);
+    setIsCalculated(true);
+
+    // Cek apakah allConsistent bernilai true dan finalWeights tersedia
+    if (allConsistent) {
+      setFinalWeights(results.finalWeights); // Set finalWeights hanya jika allConsistent
+      console.log("Final Weights after calculation:", results.finalWeights); // Pastikan finalWeights benar
+    } else {
+      console.log("Not all criteria are consistent. Final weights not set.");
+    }
+
+    console.log("Final Weights after calculation:", finalWeights);
+    // console.log("Consistency status for all groups:", updatedConsistencyStatus);
+    console.log("Is all consistent:", allConsistent);
+  };
+
+  // Fungsi untuk mengirimkan data ke backend
+  const handleNext = async () => {
+    if (isAllConsistent && finalWeights) {
+      // Pastikan finalWeights ada dan konsisten
+      const flattenedWeights = flattenFinalWeights(finalWeights);
+      console.log("Data yang dikirim ke backend:", flattenedWeights);
+      axiosInstance
+        .post("/ahp-weights", flattenedWeights)
+        .then((response) => {
+          console.log("Bobot AHP berhasil disimpan:", response.data);
+          alert("Data berhasil disimpan di database!");
+          navigate("/ranking");
+        })
+        .catch((error) => {
+          console.error("Error menyimpan bobot AHP:", error);
+          alert("Terjadi kesalahan saat menyimpan data ke database.");
+        });
+    } else {
+      alert("Final weights belum tersedia atau data tidak konsisten.");
+    }
   };
 
   return (
@@ -227,11 +307,28 @@ const PairwiseComparisonPage = () => {
           )} */}
         </section>
       ))}
-      <button
+      {/* <button
         onClick={startAHPCalculation}
         className="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
       >
         Mulai Perhitungan AHP
+      </button> */}
+
+      <button
+        onClick={checkConsistencyForAllGroups}
+        className="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
+      >
+        Check Consistency
+      </button>
+
+      <button
+        onClick={handleNext}
+        disabled={!isAllConsistent}
+        className={`mt-6 px-6 py-2 text-white font-semibold rounded transition ${
+          isAllConsistent ? "bg-green-500 hover:bg-green-600" : "bg-gray-300 cursor-not-allowed"
+        }`}
+      >
+        Next
       </button>
     </div>
   );
@@ -309,3 +406,39 @@ export default PairwiseComparisonPage;
 //     </button>
 //   </div>
 // );
+
+// const startAHPCalculation = () => {
+//   const symmetricValues = getSymmetricPairwiseValues();
+//   console.log("Final pairwiseValues for new AHP Calculation:", symmetricValues);
+//   const results = AHPServices.processAHP(symmetricValues);
+//   console.log("AHP Calculation Results:", results);
+
+//   const updatedConsistencyStatus = {};
+//   Object.keys(results).forEach((criteriaKey) => {
+//     updatedConsistencyStatus[criteriaKey] = results[criteriaKey].consistency;
+//   });
+//   setConsistencyStatus(updatedConsistencyStatus);
+//   console.log("Status Konsistensi", updatedConsistencyStatus);
+//   setIsCalculated(true);
+// };
+
+// const startAHPCalculation = () => {
+//   const symmetricValues = getSymmetricPairwiseValues();
+//   console.log("Final pairwiseValues for new AHP Calculation:", symmetricValues);
+
+//   // Proses AHP dan simpan hasilnya ke dalam state
+//   const results = AHPServices.processAHP(symmetricValues);
+//   console.log("AHP Calculation Results:", results);
+
+//   // Simpan finalWeights di state
+//   setFinalWeights(results.finalWeights);
+
+//   // Periksa status konsistensi dan simpan ke state
+//   const updatedConsistencyStatus = {};
+//   Object.keys(results).forEach((criteriaKey) => {
+//     updatedConsistencyStatus[criteriaKey] = results[criteriaKey].consistency;
+//   });
+//   setConsistencyStatus(updatedConsistencyStatus);
+//   setIsCalculated(true);
+//   console.log("Status Konsistensi", updatedConsistencyStatus);
+// };

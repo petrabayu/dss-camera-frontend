@@ -117,35 +117,6 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
     setCameraData({ ...cameraData, [name]: value }); // Simpan sebagai string
   };
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-
-  //   if (Object.keys(cameraData).length > 0) {
-  //     const dataToSave = convertToCorrectTypes(cameraData);
-  //     onSave(dataToSave); // Kirim data saat submit
-  //     // setCameraData(initialCameraData); // Reset setelah save
-  //   } else {
-  //     console.error("No data to save");
-  //   }
-  // };
-
-  // Fungsi untuk memproses input shutter speed dengan format 1/n atau angka biasa
-
-  // const handleShutterSpeedChange = (e) => {
-  //   const { name, value } = e.target;
-  //   if (value.includes("/")) {
-  //     const parts = value.split("/");
-  //     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-  //       const decimalValue = parseFloat(parts[0]) / parseFloat(parts[1]);
-  //       setCameraData({ ...cameraData, [name]: decimalValue });
-  //     } else {
-  //       setCameraData({ ...cameraData, [name]: value });
-  //     }
-  //   } else {
-  //     setCameraData({ ...cameraData, [name]: parseFloat(value) || "" });
-  //   }
-  // };
-
   return (
     <form onSubmit={handleSubmit} className="p-4 border-2 rounded-lg bg-gray-100">
       {formFields.map((field) => (
@@ -156,11 +127,6 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
               name={field.name}
               value={cameraData[field.name]}
               onChange={handleChange}
-              // onChange={
-              //   field.name === "min_shutter_speed" || field.name === "max_shutter_speed"
-              //     ? handleShutterSpeedChange
-              //     : handleChange
-              // }
               className="border p-2 rounded w-full"
             >
               <option value="">Select {field.label}</option>
@@ -180,7 +146,6 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
                   ? handleShutterSpeedChange // Khusus untuk shutter speed
                   : handleChange
               }
-              // onChange={handleChange}
               className="border p-2 rounded w-full"
             />
           )}
@@ -199,3 +164,32 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
 };
 
 export default CameraForm;
+
+// const handleSubmit = (e) => {
+//   e.preventDefault();
+
+//   if (Object.keys(cameraData).length > 0) {
+//     const dataToSave = convertToCorrectTypes(cameraData);
+//     onSave(dataToSave); // Kirim data saat submit
+//     // setCameraData(initialCameraData); // Reset setelah save
+//   } else {
+//     console.error("No data to save");
+//   }
+// };
+
+// Fungsi untuk memproses input shutter speed dengan format 1/n atau angka biasa
+
+// const handleShutterSpeedChange = (e) => {
+//   const { name, value } = e.target;
+//   if (value.includes("/")) {
+//     const parts = value.split("/");
+//     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+//       const decimalValue = parseFloat(parts[0]) / parseFloat(parts[1]);
+//       setCameraData({ ...cameraData, [name]: decimalValue });
+//     } else {
+//       setCameraData({ ...cameraData, [name]: value });
+//     }
+//   } else {
+//     setCameraData({ ...cameraData, [name]: parseFloat(value) || "" });
+//   }
+// };

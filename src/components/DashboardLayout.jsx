@@ -9,6 +9,8 @@ const DashboardLayout = () => {
     { path: "/camera-list", label: "Camera List", icon: <FiCamera /> },
     { path: "/comparison", label: "Pairwise Comparison", icon: <FiSliders /> },
     { path: "/history", label: "History", icon: <FiClock /> },
+    { path: "/choose-camera", label: "Choose Camera", icon: <FiClock /> },
+    { path: "/ranking", label: "Ranking", icon: <FiClock /> },
   ];
 
   return (

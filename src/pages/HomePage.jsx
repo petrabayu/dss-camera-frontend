@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const HomePage = () => {
   const navigate = useNavigate();
   const handleStartCalculation = () => {
-    navigate("/comparison"); // Arahkan ke halaman perhitungan SPK atau halaman perbandingan
+    navigate("/choose-camera"); // Arahkan ke halaman perhitungan SPK atau halaman perbandingan
   };
   return (
     <div className="flex flex-col items-center justify-center h-full text-center bg-gray-100 p-8">
