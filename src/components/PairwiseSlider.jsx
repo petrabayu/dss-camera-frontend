@@ -6,6 +6,14 @@ const PairwiseSlider = ({ criterionA, criterionB, criteriaKey, rowIndex, colInde
 
   const displayValue = value <= 9 ? 10 - value : value - 8;
 
+  // Reciprocal value calculation
+  const leftValue = value <= 9 ? displayValue : displayValue === 1 ? "1" : `1/${displayValue}`;
+  const rightValue = value <= 9 ? (displayValue === 1 ? "1" : `1/${displayValue}`) : displayValue;
+
+  // Determine comparison operator
+  const comparisonOperator =
+    parseFloat(displayValue) === 1 ? "=" : parseFloat(leftValue) > parseFloat(rightValue) ? ">" : "<";
+
   // Handle slider value change
   const handleChange = (e) => {
     const newValue = parseInt(e.target.value);
@@ -23,10 +31,14 @@ const PairwiseSlider = ({ criterionA, criterionB, criteriaKey, rowIndex, colInde
   return (
     <div className="flex items-center justify-between space-x-4">
       {/* Label for Criterion A */}
-      <div className="text-right w-20">{criterionA}</div>
+      <span className="w-12 text-center font-semibold">{leftValue}</span>
+      <div className="text-right text-lg w-[12rem]">{criterionA}</div>
 
       {/* Slider */}
-      <div className="relative w-3/4">
+      <div className="relative w-[32rem] py-1">
+        <p className="text-center text-base ">
+          {criterionA} {comparisonOperator} {criterionB}
+        </p>
         <input
           type="range"
           min="1"
@@ -50,8 +62,8 @@ const PairwiseSlider = ({ criterionA, criterionB, criteriaKey, rowIndex, colInde
       </div>
 
       {/* Label for Criterion B */}
-      <div className="text-left w-20">{criterionB}</div>
-      <span className="w-12 text-center font-semibold">{displayValue}</span>
+      <div className="text-left text-lg w-[12rem]">{criterionB}</div>
+      <span className="w-12 text-center font-semibold">{rightValue}</span>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import PairwiseSlider from "../components/PairwiseSlider";
 import AHPServices from "../services/AHPServices";
 import axiosInstance from "../utils/axiosInstance";
+import { FiHelpCircle, FiAlertCircle } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
 const PairwiseComparisonPage = () => {
@@ -49,7 +50,14 @@ const PairwiseComparisonPage = () => {
   });
   const [isAllConsistent, setIsAllConsistent] = useState(false);
   const [finalWeights, setFinalWeights] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleModalToggle = () => {
+    setIsModalOpen(!isModalOpen);
+  };
 
   // Buat salinan dari pairwiseValues dengan konversi nilai negatif menjadi kebalikan
   const getTransformedPairwiseValues = () => {
@@ -64,18 +72,18 @@ const PairwiseComparisonPage = () => {
     return transformedValues;
   };
 
-  const makeSymmetricMatrix = (matrix) => {
+  const completePairwiseMatrix = (matrix) => {
     const size = matrix.length;
-    const symmetricMatrix = matrix.map((row) => [...row]); // Salin matriks untuk diubah
+    const pairwiseMatrix = matrix.map((row) => [...row]);
 
     for (let i = 0; i < size; i++) {
       for (let j = i + 1; j < size; j++) {
         // Isi nilai kebalikannya di posisi [j][i]
-        symmetricMatrix[j][i] = 1 / symmetricMatrix[i][j];
+        pairwiseMatrix[j][i] = 1 / pairwiseMatrix[i][j];
       }
     }
 
-    return symmetricMatrix;
+    return pairwiseMatrix;
   };
 
   const getSymmetricPairwiseValues = () => {
@@ -83,9 +91,9 @@ const PairwiseComparisonPage = () => {
     const symmetricValues = {};
 
     for (const [criteriaKey, matrix] of Object.entries(transformedValues)) {
-      symmetricValues[criteriaKey] = makeSymmetricMatrix(matrix);
+      symmetricValues[criteriaKey] = completePairwiseMatrix(matrix);
     }
-
+    console.log("Matriks Perbandingan Berpasangan:", symmetricValues); // matriks perbandingan berpasangan
     return symmetricValues;
   };
 
@@ -212,44 +220,50 @@ const PairwiseComparisonPage = () => {
       flattenedWeights.screen_dots_weight = nestedWeights.easeOfUse.screenDots;
       flattenedWeights.weight_weight = nestedWeights.easeOfUse.weight;
     }
-
     return flattenedWeights;
   };
+
   const checkConsistencyForAllGroups = () => {
+    setIsLoading(true);
+
     const symmetricValues = getSymmetricPairwiseValues();
     const results = AHPServices.processAHP(symmetricValues);
 
-    console.log("Results from AHP calculation:", results);
+    // console.log("Results from AHP calculation:", results);
 
-    const updatedConsistencyStatus = {};
-    let allConsistent = true;
+    setTimeout(() => {
+      const updatedConsistencyStatus = {};
+      let allConsistent = true;
 
-    Object.keys(results).forEach((criteriaKey) => {
-      const status = results[criteriaKey].consistency;
-      updatedConsistencyStatus[criteriaKey] = status !== undefined ? status : "CONSISTENT";
-      if (
-        updatedConsistencyStatus[criteriaKey] !== "CONSISTENT" &&
-        updatedConsistencyStatus[criteriaKey] !== "NOT APPLICABLE"
-      ) {
-        allConsistent = false;
+      Object.keys(results).forEach((criteriaKey) => {
+        const status = results[criteriaKey].consistency;
+        updatedConsistencyStatus[criteriaKey] = status !== undefined ? status : "CONSISTENT";
+        if (
+          updatedConsistencyStatus[criteriaKey] !== "CONSISTENT" &&
+          updatedConsistencyStatus[criteriaKey] !== "NOT APPLICABLE"
+        ) {
+          allConsistent = false;
+        }
+      });
+
+      setConsistencyStatus(updatedConsistencyStatus);
+      setIsAllConsistent(allConsistent);
+      setIsCalculated(true);
+
+      // Cek apakah allConsistent bernilai true dan finalWeights tersedia
+      if (allConsistent) {
+        setFinalWeights(results.finalWeights); // Set finalWeights hanya jika allConsistent
+        // console.log("Final Weights after calculation:", results.finalWeights); // Pastikan finalWeights benar
+      } else {
+        console.log("Not all criteria are consistent. Final weights not set.");
       }
-    });
 
-    setConsistencyStatus(updatedConsistencyStatus);
-    setIsAllConsistent(allConsistent);
-    setIsCalculated(true);
+      // console.log("Final Weights after calculation:", finalWeights);
+      // console.log("Consistency status for all groups:", updatedConsistencyStatus);
+      // console.log("Is all consistent:", allConsistent);
 
-    // Cek apakah allConsistent bernilai true dan finalWeights tersedia
-    if (allConsistent) {
-      setFinalWeights(results.finalWeights); // Set finalWeights hanya jika allConsistent
-      console.log("Final Weights after calculation:", results.finalWeights); // Pastikan finalWeights benar
-    } else {
-      console.log("Not all criteria are consistent. Final weights not set.");
-    }
-
-    console.log("Final Weights after calculation:", finalWeights);
-    // console.log("Consistency status for all groups:", updatedConsistencyStatus);
-    console.log("Is all consistent:", allConsistent);
+      setIsLoading(false); // Matikan overlay setelah proses selesai
+    }, 1000);
   };
 
   // Fungsi untuk mengirimkan data ke backend
@@ -257,12 +271,13 @@ const PairwiseComparisonPage = () => {
     if (isAllConsistent && finalWeights) {
       // Pastikan finalWeights ada dan konsisten
       const flattenedWeights = flattenFinalWeights(finalWeights);
-      console.log("Data yang dikirim ke backend:", flattenedWeights);
+      console.log("--------------------------------------------------------------------");
+      console.log("Data Bobot final hasil perbandingan berpasangan:", flattenedWeights);
       axiosInstance
         .post("/ahp-weights", flattenedWeights)
         .then((response) => {
-          console.log("Bobot AHP berhasil disimpan:", response.data);
-          alert("Data berhasil disimpan di database!");
+          // console.log("Bobot AHP berhasil disimpan:", response.data);
+          // alert("Data berhasil disimpan di database!");
           navigate("/ranking");
         })
         .catch((error) => {
@@ -275,170 +290,139 @@ const PairwiseComparisonPage = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Pairwise Comparison</h1>
+    <div>
+      <div className="my-4">
+        <div className="flex items-center space-x-2">
+          <h1 className="text-2xl font-bold text-gray-800">Perbandingan Berpasangan</h1>
+          <button onClick={handleModalToggle} className="text-blue-600 hover:text-blue-800  border-blue-600">
+            <FiHelpCircle size={18} />
+          </button>
+        </div>
+        <p className="text-gray-600 text-base w-2/3 mt-2">
+          Di halaman ini, Anda dapat membandingkan kriteria secara berpasangan untuk menentukan tingkat kepentingannya.
+          Proses ini akan membantu menghitung bobot setiap kriteria berdasarkan preferensi Anda.
+        </p>
+        <div className="mt-4 bg-yellow-300 p-4 rounded-lg ">
+          <p className="mb-2">
+            <strong>Saat Check Consistency, jika background berubah warna menjadi:</strong>
+          </p>
 
-      {Object.entries(comparisonData).map(([criteriaKey, section], index) => (
-        <section
-          key={index}
-          className={`mb-8 p-8 w-[500px] border border-gray-300 rounded-lg shadow-lg ${renderBoxStyle(criteriaKey)}`}
-        >
-          <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
-          <div className="space-y-2">
-            {section.pairs.map(({ pair: [criterionA, criterionB], rowIndex, colIndex }, idx) => (
-              <div key={idx} className="flex items-center space-x-4">
-                <PairwiseSlider
-                  criterionA={criterionA}
-                  criterionB={criterionB}
-                  criteriaKey={criteriaKey} // Tambahkan nama kriteria utama
-                  rowIndex={rowIndex}
-                  colIndex={colIndex}
-                  onValueChange={handleSliderChange}
-                />
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-800 font-medium">
+            <span className="bg-green-300 font-semibold px-2 py-1 rounded">Hijau:</span> Perhitungan konsisten.
+          </p>
+          <p className="text-gray-800 font-medium mt-4">
+            <span className="bg-red-500  font-semibold px-2 py-1 rounded">Merah:</span> Perhitungan belum konsisten,
+            harap periksa kembali nilai input.
+          </p>
+        </div>
+      </div>
 
-          {/* Alert untuk ketidakkonsistenan */}
-          {/* {!consistencyStatus[criteriaKey] && (
-            <div className="mt-4 bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded-md">
-              <p>This comparison is not consistent. Please review the values.</p>
+      {Object.entries(comparisonData).map(([criteriaKey, section], index) => {
+        const boxStyle = renderBoxStyle(criteriaKey);
+
+        return (
+          <section
+            key={index}
+            className={`mb-8 p-8 w-full border border-gray-300 rounded-lg shadow-lg ${renderBoxStyle(criteriaKey)}`}
+          >
+            <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
+            <div className="space-y-2">
+              {section.pairs.map(({ pair: [criterionA, criterionB], rowIndex, colIndex }, idx) => (
+                <div key={idx} className="flex items-center space-x-4">
+                  <PairwiseSlider
+                    criterionA={criterionA}
+                    criterionB={criterionB}
+                    criteriaKey={criteriaKey} // Tambahkan nama kriteria utama
+                    rowIndex={rowIndex}
+                    colIndex={colIndex}
+                    onValueChange={handleSliderChange}
+                  />
+                </div>
+              ))}
             </div>
-          )} */}
-        </section>
-      ))}
-      {/* <button
-        onClick={startAHPCalculation}
-        className="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
-      >
-        Mulai Perhitungan AHP
-      </button> */}
 
-      <button
-        onClick={checkConsistencyForAllGroups}
-        className="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
-      >
-        Check Consistency
-      </button>
+            {/* Alert untuk ketidakkonsistenan */}
+            {boxStyle === "bg-red-500" && (
+              <div className="mt-4 bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded-md flex items-center space-x-2">
+                <FiAlertCircle />
+                <p>Perbandingan ini tidak konsisten. Harap tinjau kembali nilai preferensi Anda.</p>
+              </div>
+            )}
+          </section>
+        );
+      })}
 
-      <button
-        onClick={handleNext}
-        disabled={!isAllConsistent}
-        className={`mt-6 px-6 py-2 text-white font-semibold rounded transition ${
-          isAllConsistent ? "bg-green-500 hover:bg-green-600" : "bg-gray-300 cursor-not-allowed"
-        }`}
-      >
-        Next
-      </button>
+      {isLoading && (
+        <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+          <div className="flex items-center">
+            <svg
+              className="animate-spin h-8 w-8 text-blue-500 mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span className="text-blue-500 font-semibold text-lg">Processing...</span>
+          </div>
+        </div>
+      )}
+      <div className="space-x-6">
+        <button
+          onClick={checkConsistencyForAllGroups}
+          disabled={isLoading}
+          className={`px-6 py-2 font-semibold rounded text-white transition ${
+            isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
+          }`}
+        >
+          {isLoading ? "Processing..." : "Check Consistency"}
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={!isAllConsistent}
+          className={` px-6 py-2 text-white font-semibold rounded transition ${
+            isAllConsistent ? "bg-green-500 hover:bg-green-600" : "bg-gray-300 cursor-not-allowed"
+          }`}
+        >
+          Next
+        </button>
+      </div>
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl">
+            <h2 className="text-xl font-semibold text-gray-800">Tips Mendapatkan Nilai Konsisten</h2>
+            <p className="text-gray-600 mt-2">
+              Berikut adalah beberapa tips untuk memastikan nilai perbandingan Anda konsisten dan sesuai dengan
+              preferensi:
+            </p>
+            <ul className="list-disc list-outside mt-4 px-4 space-y-2 text-gray-600">
+              <li>Fokus pada satu kriteria utama saat memberikan nilai perbandingan.</li>
+              <li>Berikan nilai secara bertahap, hindari nilai yang terlalu ekstrem kecuali benar-benar dibutuhkan.</li>
+              <li>
+                Pastikan preferensi Anda logis, misalnya jika A lebih penting dari B, dan B lebih penting dari C, maka A
+                harus lebih penting dari C.
+              </li>
+              <li>
+                Jika nilai konsistensi masih merah, evaluasi ulang apakah preferensi Anda sudah mencerminkan kebutuhan
+                yang sebenarnya.
+              </li>
+              <li>Gunakan slider dengan hati-hati, perhatikan perbandingan antar kriteria yang saling terkait.</li>
+            </ul>
+            <div className="mt-4 text-right">
+              <button
+                onClick={handleModalToggle}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default PairwiseComparisonPage;
-
-// const matrices = {
-//   mainCriteria: [
-//     // Matriks perbandingan berpasangan untuk kriteria utama
-//     [1, 3, 0.5, 2, 4],
-//     [0.333, 1, 0.2, 0.5, 3],
-//     [2, 5, 1, 4, 6],
-//     [0.5, 2, 0.25, 1, 3],
-//     [0.25, 0.333, 0.167, 0.333, 1],
-//   ],
-//   harga: [
-//     // Matriks perbandingan berpasangan untuk subkriteria harga
-//     [1],
-//   ],
-//   kualitasGambar: [
-//     // Matriks perbandingan berpasangan untuk subkriteria kualitas gambar
-//     [1, 4, 3],
-//     [0.25, 1, 0.5],
-//     [0.333, 2, 1],
-//   ],
-//   performa: [
-//     // Matriks perbandingan berpasangan untuk subkriteria performa
-//     [1, 2, 3, 4, 5], // ISO (min) dibandingkan dengan yang lain
-//     [0.5, 1, 2, 3, 4], // ISO (maks)
-//     [0.333, 0.5, 1, 2, 3], // Shutter Speed (min)
-//     [0.25, 0.333, 0.5, 1, 2], // Shutter Speed (maks)
-//     [0.2, 0.25, 0.333, 0.5, 1], // Continuous Drive
-//   ],
-//   kualitasVideo: [
-//     // Matriks perbandingan berpasangan untuk subkriteria kualitas video
-//     [1, 2],
-//     [0.5, 1],
-//   ],
-//   kemudahanPenggunaan: [
-//     // Matriks perbandingan berpasangan untuk subkriteria kemudahan penggunaan
-//     [1, 0.5, 2, 3],
-//     [2, 1, 4, 5],
-//     [0.5, 0.25, 1, 2],
-//     [0.333, 0.2, 0.5, 1],
-//   ],
-// };
-
-// kode yang berhasil tapi saat matriks pebandingan masih hardcode
-// return (
-//   <div className="p-4">
-//     <h1 className="text-2xl font-bold mb-6">Pairwise Comparison</h1>
-
-//     {Object.values(comparisonData).map((section, index) => (
-//       <section key={index} className="mb-8 p-8 border border-gray-300 rounded-lg shadow-lg bg-white w-fit ">
-//         <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
-//         <div className="space-y-2">
-//           {section.pairs.map(([criterionA, criterionB], idx) => (
-//             <div key={idx} className="flex items-center space-x-4">
-//               <PairwiseSlider
-//                 criterionA={criterionA}
-//                 criterionB={criterionB}
-//                 onValueChange={(value) => handleSliderChange(value, criterionA, criterionB)}
-//               />
-//             </div>
-//           ))}
-//         </div>
-//       </section>
-//     ))}
-//     <button
-//       onClick={startAHPCalculation} // Ganti dengan fungsi perhitungan AHP sesungguhnya
-//       className="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
-//     >
-//       Mulai Perhitungan AHP
-//     </button>
-//   </div>
-// );
-
-// const startAHPCalculation = () => {
-//   const symmetricValues = getSymmetricPairwiseValues();
-//   console.log("Final pairwiseValues for new AHP Calculation:", symmetricValues);
-//   const results = AHPServices.processAHP(symmetricValues);
-//   console.log("AHP Calculation Results:", results);
-
-//   const updatedConsistencyStatus = {};
-//   Object.keys(results).forEach((criteriaKey) => {
-//     updatedConsistencyStatus[criteriaKey] = results[criteriaKey].consistency;
-//   });
-//   setConsistencyStatus(updatedConsistencyStatus);
-//   console.log("Status Konsistensi", updatedConsistencyStatus);
-//   setIsCalculated(true);
-// };
-
-// const startAHPCalculation = () => {
-//   const symmetricValues = getSymmetricPairwiseValues();
-//   console.log("Final pairwiseValues for new AHP Calculation:", symmetricValues);
-
-//   // Proses AHP dan simpan hasilnya ke dalam state
-//   const results = AHPServices.processAHP(symmetricValues);
-//   console.log("AHP Calculation Results:", results);
-
-//   // Simpan finalWeights di state
-//   setFinalWeights(results.finalWeights);
-
-//   // Periksa status konsistensi dan simpan ke state
-//   const updatedConsistencyStatus = {};
-//   Object.keys(results).forEach((criteriaKey) => {
-//     updatedConsistencyStatus[criteriaKey] = results[criteriaKey].consistency;
-//   });
-//   setConsistencyStatus(updatedConsistencyStatus);
-//   setIsCalculated(true);
-//   console.log("Status Konsistensi", updatedConsistencyStatus);
-// };

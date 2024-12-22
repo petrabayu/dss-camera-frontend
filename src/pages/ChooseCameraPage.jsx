@@ -1,29 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { useNavigate } from "react-router-dom";
+import { FiSearch, FiHelpCircle } from "react-icons/fi";
 
 const ChooseCameraPage = () => {
   const [cameras, setCameras] = useState([]);
   const [selectedCameras, setSelectedCameras] = useState(JSON.parse(localStorage.getItem("selectedCameras")) || []);
   const navigate = useNavigate();
 
-  const fetchCameras = async () => {
-    try {
-      const response = await axiosInstance.get("/cameras");
-      setCameras(response.data.data);
-    } catch (error) {
-      console.error("Error fetching cameras:", error);
-    }
-  };
+  // fitur search
+  const [filteredCameras, setFilteredCameras] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
-  useEffect(() => {
-    fetchCameras();
-    console.log("Current Selected Camera IDs:", selectedCameras);
-  }, [selectedCameras]);
-
-  useEffect(() => {
-    localStorage.setItem("selectedCameras", JSON.stringify(selectedCameras));
-  }, [selectedCameras]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const columns = [
     { key: "camera_name", label: "Camera Name" },
@@ -46,6 +35,40 @@ const ChooseCameraPage = () => {
     { key: "weight", label: "Weight" },
   ];
 
+  const fetchCameras = async () => {
+    try {
+      const response = await axiosInstance.get("/cameras");
+      setCameras(response.data.data);
+      setFilteredCameras(response.data.data); // fitur search
+    } catch (error) {
+      console.error("Error fetching cameras:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCameras();
+    // console.log("Current Selected Camera IDs:", selectedCameras);
+  }, [selectedCameras]);
+
+  useEffect(() => {
+    localStorage.setItem("selectedCameras", JSON.stringify(selectedCameras));
+  }, [selectedCameras]);
+
+  const handleModalToggle = () => {
+    setIsModalOpen(!isModalOpen);
+  };
+
+  // fitur search
+  const handleSearch = (e) => {
+    const keyword = e.target.value.toLowerCase();
+    setSearchKeyword(keyword);
+    setFilteredCameras(
+      cameras.filter(
+        (camera) => camera.camera_name.toLowerCase().includes(keyword) // Filter berdasarkan nama kamera
+      )
+    );
+  };
+
   const formatCurrency = (value) => {
     return value.toLocaleString("id-ID", { style: "currency", currency: "IDR" });
   };
@@ -64,13 +87,13 @@ const ChooseCameraPage = () => {
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedCameras(cameras.map((camera) => camera.id)); // Pilih semua kamera
-      console.log(
-        "All Camera IDs Selected:",
-        cameras.map((camera) => camera.id)
-      );
+      // console.log(
+      //   "All Camera IDs Selected:",
+      //   cameras.map((camera) => camera.id)
+      // );
     } else {
       setSelectedCameras([]); // Hapus semua pilihan
-      console.log("No Camera Selected");
+      // console.log("No Camera Selected");
     }
   };
 
@@ -81,16 +104,47 @@ const ChooseCameraPage = () => {
           ? prevSelected.filter((cameraId) => cameraId !== id) // Hapus jika sudah dipilih
           : [...prevSelected, id] // Tambahkan jika belum dipilih
     );
-    console.log("Selected Camera IDs:", selectedCameras);
+    // console.log("Selected Camera IDs:", selectedCameras);
   };
 
   const handleNextPage = () => {
     navigate("/comparison");
   };
 
+  const formatDecimal = (value, decimals = 1) => {
+    return parseFloat(value).toFixed(decimals);
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Choose Camera</h1>
+      <div className="my-4">
+        <div className="flex items-center space-x-2">
+          <h1 className="text-2xl font-bold text-gray-800">Pilih Kamera</h1>
+          <button onClick={handleModalToggle} className="text-blue-600 hover:text-blue-800  border-blue-600">
+            <FiHelpCircle size={18} />
+          </button>
+        </div>
+        <p className="text-gray-600 text-base mt-2 w-2/3">
+          Pilih kamera alternatif yang ingin Anda bandingkan dan evaluasi. Kamera yang dipilih akan digunakan dalam
+          proses perhitungan untuk menentukan peringkat kamera terbaik.
+        </p>
+      </div>
+
+      {/* Input untuk pencarian */}
+      <div className="mb-4 flex justify-between items-center">
+        <div className="relative w-1/3">
+          <input
+            type="text"
+            placeholder="Search by camera name..."
+            value={searchKeyword}
+            onChange={handleSearch}
+            className="border border-gray-300 rounded px-2 py-1 w-full pl-10"
+          />
+          <span className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400">
+            <FiSearch />
+          </span>
+        </div>
+      </div>
 
       {/* Wrapper Tabel dengan Overflow Horizontal */}
       <div className="max-w-full">
@@ -102,7 +156,8 @@ const ChooseCameraPage = () => {
                   <input
                     type="checkbox"
                     onChange={handleSelectAll}
-                    checked={selectedCameras.length === cameras.length && cameras.length > 0}
+                    // checked={selectedCameras.length === cameras.length && cameras.length > 0} // real one
+                    checked={selectedCameras.length === filteredCameras.length && filteredCameras.length > 0}
                   />
                 </th>
                 {columns.map((col) => (
@@ -113,7 +168,7 @@ const ChooseCameraPage = () => {
               </tr>
             </thead>
             <tbody>
-              {cameras.map((camera, index) => (
+              {filteredCameras.map((camera, index) => (
                 <tr key={index}>
                   <td className="border border-gray-300 p-2 text-xs text-center">
                     <input
@@ -122,10 +177,22 @@ const ChooseCameraPage = () => {
                       onChange={() => handleSelectCamera(camera.id)}
                     />
                   </td>
+                  {/* real one
+              {cameras.map((camera, index) => (
+                <tr key={index}>
+                  <td className="border border-gray-300 p-2 text-xs text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedCameras.includes(camera.id)}
+                      onChange={() => handleSelectCamera(camera.id)}
+                    />
+                  </td> */}
                   {columns.map((col) => (
                     <td key={col.key} className="border border-gray-300 p-2 text-xs text-center">
                       {col.key === "price"
                         ? formatCurrency(camera[col.key])
+                        : col.key === "continues_drive"
+                        ? formatDecimal(camera[col.key])
                         : col.key === "min_shutter_speed" || col.key === "max_shutter_speed"
                         ? formatShutterSpeed(camera[col.key])
                         : camera[col.key]}
@@ -139,8 +206,8 @@ const ChooseCameraPage = () => {
       </div>
       <div className="flex justify-center mt-4">
         <button
-          className={`px-4 py-2 text-white rounded ${
-            selectedCameras.length > 1 ? "bg-blue-500" : "bg-gray-300 cursor-not-allowed"
+          className={`px-4 py-2 text-white rounded w-24 ${
+            selectedCameras.length > 1 ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 cursor-not-allowed"
           }`}
           disabled={selectedCameras.length < 2}
           onClick={handleNextPage}
@@ -148,6 +215,27 @@ const ChooseCameraPage = () => {
           Next
         </button>
       </div>
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-xl font-semibold text-gray-800">Kamera Tidak Ditemukan</h2>
+            <p className="text-gray-600 mt-2">
+              Jika kamera yang Anda cari tidak ada, silakan tambahkan kamera baru di halaman{" "}
+              <strong>Daftar Kamera</strong>. Anda dapat melakukannya dengan menekan tombol{" "}
+              <strong>"Add Camera"</strong> di halaman tersebut.
+            </p>
+            <div className="mt-4 text-right">
+              <button
+                onClick={handleModalToggle}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -45,34 +45,44 @@ const initialCameraData = {
 };
 
 const formFields = [
-  { name: "camera_name", label: "Camera Name", type: "text" },
-  { name: "price", label: "Price", type: "number" },
-  { name: "pixel", label: "Pixels", type: "number" },
-  { name: "max_resolution_width", label: "Max Res (W)", type: "number" },
-  { name: "max_resolution_length", label: "Max Res (L)", type: "number" },
+  { name: "camera_name", label: "Camera Name", type: "text", placeholder: "Contoh: Canon EOS R5" },
+  { name: "price", label: "Price (IDR)", type: "number", placeholder: "Contoh: 25000000" },
+  { name: "pixel", label: "Pixels (MP)", type: "number", placeholder: "Contoh: 24" },
+  { name: "max_resolution_width", label: "Max Resolution Width (px)", type: "number", placeholder: "Contoh: 6000" },
+  { name: "max_resolution_length", label: "Max Resolution Length (px)", type: "number", placeholder: "Contoh: 4000" },
   {
     name: "sensor_size",
     label: "Sensor Size",
     type: "select",
     options: ['1/2.3"', '1/1.7"', '2/3"', '1"', "Four Thirds", "APS-C", "APS-H", "Full Frame", "Medium Format"],
   },
-  { name: "min_iso", label: "ISO Min", type: "number" },
-  { name: "max_iso", label: "ISO Max", type: "number" },
-  { name: "min_shutter_speed", label: "Shutter Min", type: "text" },
-  { name: "max_shutter_speed", label: "Shutter Max", type: "text" },
-  { name: "continues_drive", label: "Cont. Drive", type: "number" },
-  { name: "max_video_resolution_width", label: "Video Res (W)", type: "number" },
-  { name: "max_video_resolution_length", label: "Video Res (L)", type: "number" },
-  { name: "max_video_fps", label: "Video FPS Max", type: "number" },
-  { name: "battery_life", label: "Battery Life", type: "number" },
+  { name: "min_iso", label: "ISO Min", type: "number", placeholder: "Contoh: 100" },
+  { name: "max_iso", label: "ISO Max", type: "number", placeholder: "Contoh: 51200" },
+  { name: "min_shutter_speed", label: "Shutter Speed Min", type: "text", placeholder: "Contoh: 30" },
+  { name: "max_shutter_speed", label: "Shutter Speed Max", type: "text", placeholder: "Contoh: 1/8000" },
+  { name: "continues_drive", label: "Continuous Drive (fps)", type: "number", placeholder: "Contoh: 20" },
+  {
+    name: "max_video_resolution_width",
+    label: "Video Resolution Width (px)",
+    type: "number",
+    placeholder: "Contoh: 3840",
+  },
+  {
+    name: "max_video_resolution_length",
+    label: "Video Resolution Length (px)",
+    type: "number",
+    placeholder: "Contoh: 2160",
+  },
+  { name: "max_video_fps", label: "Video FPS Max", type: "number", placeholder: "Contoh: 120" },
+  { name: "battery_life", label: "Battery Life (shots)", type: "number", placeholder: "Contoh: 350" },
   {
     name: "articulated_lcd",
     label: "Articulated LCD",
     type: "select",
     options: ["Fixed", "Tilting", "Fully Articulated"],
   },
-  { name: "screen_dots", label: "Screen Dots", type: "number" },
-  { name: "weight", label: "Weight", type: "number" },
+  { name: "screen_dots", label: "Screen Dots (px)", type: "number", placeholder: "Contoh: 1040000" },
+  { name: "weight", label: "Weight (g)", type: "number", placeholder: "Contoh: 300" },
 ];
 
 const CameraForm = ({ onSave, onCancel, initialData }) => {
@@ -128,6 +138,7 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
               value={cameraData[field.name]}
               onChange={handleChange}
               className="border p-2 rounded w-full"
+              required
             >
               <option value="">Select {field.label}</option>
               {field.options.map((option) => (
@@ -141,12 +152,14 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
               type={field.type}
               name={field.name}
               value={cameraData[field.name]}
+              placeholder={field.placeholder}
               onChange={
                 field.name === "min_shutter_speed" || field.name === "max_shutter_speed"
                   ? handleShutterSpeedChange // Khusus untuk shutter speed
                   : handleChange
               }
               className="border p-2 rounded w-full"
+              required
             />
           )}
         </div>
@@ -164,32 +177,3 @@ const CameraForm = ({ onSave, onCancel, initialData }) => {
 };
 
 export default CameraForm;
-
-// const handleSubmit = (e) => {
-//   e.preventDefault();
-
-//   if (Object.keys(cameraData).length > 0) {
-//     const dataToSave = convertToCorrectTypes(cameraData);
-//     onSave(dataToSave); // Kirim data saat submit
-//     // setCameraData(initialCameraData); // Reset setelah save
-//   } else {
-//     console.error("No data to save");
-//   }
-// };
-
-// Fungsi untuk memproses input shutter speed dengan format 1/n atau angka biasa
-
-// const handleShutterSpeedChange = (e) => {
-//   const { name, value } = e.target;
-//   if (value.includes("/")) {
-//     const parts = value.split("/");
-//     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-//       const decimalValue = parseFloat(parts[0]) / parseFloat(parts[1]);
-//       setCameraData({ ...cameraData, [name]: decimalValue });
-//     } else {
-//       setCameraData({ ...cameraData, [name]: value });
-//     }
-//   } else {
-//     setCameraData({ ...cameraData, [name]: parseFloat(value) || "" });
-//   }
-// };

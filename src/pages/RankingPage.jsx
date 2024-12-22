@@ -1,36 +1,11 @@
 import React, { useState } from "react";
 import axiosInstance from "../utils/axiosInstance";
+import { FiAlertTriangle } from "react-icons/fi";
 
 const RankingPage = () => {
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // const handleShowResults = async () => {
-  //   try {
-  //     setLoading(true);
-
-  //     const response = await axiosInstance.get("/topsis-scores/ranking");
-  //     const rankingResults = response.data;
-
-  //     console.log("Ranking Results with Camera Names:", rankingResults);
-
-  //     setRankingData(
-  //       rankingResults.map((item, index) => ({
-  //         rank: index + 1,
-  //         camera_name: item.camera_name,
-  //         score: item.score,
-  //       }))
-  //     );
-
-  //     // Kosongkan local storage
-  //     localStorage.removeItem("selectedCameras");
-  //   } catch (error) {
-  //     console.error("Error fetching ranking results:", error);
-  //     alert("Gagal mengambil hasil ranking.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const handleShowResults = async () => {
     try {
@@ -38,17 +13,23 @@ const RankingPage = () => {
 
       // Ambil kamera_id dari local storage
       const selectedCameras = JSON.parse(localStorage.getItem("selectedCameras"));
-      console.log("Selected Camera IDs from Local Storage:", selectedCameras);
+      // console.log("Selected Camera IDs from Local Storage:", selectedCameras);
 
       if (!selectedCameras || selectedCameras.length === 0) {
-        alert("Tidak ada kamera yang dipilih.");
+        setAlertVisible(true); // Tampilkan alert
         setLoading(false);
         return;
       }
 
+      // if (!selectedCameras || selectedCameras.length === 0) {
+      //   alert("Tidak ada kamera yang dipilih.");
+      //   setLoading(false);
+      //   return;
+      // }
+
       // Ambil bobot terbaru dari backend
       const ahpWeightResponse = await axiosInstance.get("/ahp-weights/latest");
-      console.log("Latest AHP Weights from Backend:", ahpWeightResponse.data.data);
+      // console.log("Latest AHP Weights from Backend:", ahpWeightResponse.data.data);
 
       const ahpWeights = ahpWeightResponse.data.data;
 
@@ -58,10 +39,10 @@ const RankingPage = () => {
         return;
       }
 
-      console.log("Data yang dikirim ke backend untuk TOPSIS:", {
-        alternativeId: selectedCameras,
-        ahpWeightId: ahpWeights, // Pastikan ahpWeights adalah ID saja
-      });
+      // console.log("Data yang dikirim ke backend untuk TOPSIS:", {
+      //   alternativeId: selectedCameras,
+      //   ahpWeightId: ahpWeights, // Pastikan ahpWeights adalah ID saja
+      // });
 
       // Kirim data ke backend untuk proses TOPSIS
       const topsisResponse = await axiosInstance.post("/topsis-calculation", {
@@ -70,7 +51,7 @@ const RankingPage = () => {
       });
 
       const topsisResults = topsisResponse.data;
-      console.log("TOPSIS Calculation Results from Backend:", topsisResults);
+      // console.log("TOPSIS Calculation Results from Backend:", topsisResults);
 
       if (!topsisResults || !topsisResults.cameraId || !topsisResults.idealSolution) {
         alert("Gagal memproses hasil TOPSIS.");
@@ -93,13 +74,10 @@ const RankingPage = () => {
       );
 
       const rankingWithNames = await Promise.all(cameraNamesPromises);
-      console.log("Ranking with names:", rankingWithNames);
+      // console.log("Ranking with names:", rankingWithNames);
 
       // Terima hasil rangking dari backend
       setRankingData(rankingWithNames);
-
-      // Kosongkan local storage
-      localStorage.removeItem("selectedCameras");
     } catch (error) {
       console.error("Error fetching TOPSIS results:", error);
       alert("Gagal mengambil hasil ranking.");
@@ -109,8 +87,14 @@ const RankingPage = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Ranking Page</h1>
+    <div>
+      <div className="my-4">
+        <h1 className="text-2xl font-bold mb-6">Peringkat</h1>
+        <p className="text-gray-600 text-base w-2/3">
+          Halaman ini menampilkan peringkat kamera berdasarkan hasil perhitungan. Anda dapat melihat kamera mana yang
+          paling sesuai dengan preferensi dan kebutuhan Anda.
+        </p>
+      </div>
       <button
         onClick={handleShowResults}
         className="px-4 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600"
@@ -120,9 +104,9 @@ const RankingPage = () => {
       </button>
       <div className="mt-6">
         {rankingData.length > 0 ? (
-          <table className="min-w-full border-collapse border border-gray-300">
+          <table className="min-w-full text-center border-collapse border border-gray-300">
             <thead>
-              <tr>
+              <tr className="bg-gray-200 ">
                 <th className="border border-gray-300 px-4 py-2">Rank</th>
                 <th className="border border-gray-300 px-4 py-2">Camera Name</th>
                 <th className="border border-gray-300 px-4 py-2">Score</th>
@@ -139,9 +123,33 @@ const RankingPage = () => {
             </tbody>
           </table>
         ) : (
-          <p className="text-gray-600">Belum ada hasil rangking yang ditampilkan.</p>
+          <p className="text-gray-600">
+            Tekan button <strong>Show Results</strong> untuk menampilkan daftar peringkat.
+          </p>
         )}
       </div>
+      {alertVisible && (
+        <div className="fixed inset-0 flex justify-center items-center bg-gray-800 bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <div className="flex items-center space-x-2">
+              <FiAlertTriangle size={24} />
+              <h2 className="text-2xl font-semibold text-gray-800">Peringatan</h2>
+            </div>
+            <p className="text-gray-600 mt-2">
+              Tidak ada kamera yang dipilih. Silakan pilih kamera dan lakukan perbandingan berpasangan untuk mendapatkan
+              hasil.
+            </p>
+            <div className="mt-4 text-right">
+              <button
+                onClick={() => setAlertVisible(false)} // Tutup alert
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

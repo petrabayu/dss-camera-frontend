@@ -8,6 +8,8 @@ import PairwiseComparisonPage from "../pages/PairwiseComparisonPage";
 import HistoryPage from "../pages/HistoryPage";
 import ChooseCameraPage from "../pages/ChooseCameraPage";
 import RankingPage from "../pages/RankingPage";
+import AboutPage from "../pages/AboutPage";
+import HowToUsePage from "../pages/HowToUsePage";
 
 const AppRoutes = () => {
   return (
@@ -20,6 +22,8 @@ const AppRoutes = () => {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/choose-camera" element={<ChooseCameraPage />} />
           <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/how-to-use" element={<HowToUsePage />} />
         </Route>
       </Routes>
     </Router>

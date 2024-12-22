@@ -2,12 +2,18 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import CameraForm from "../components/CameraForm";
 import ConfirmModal from "../components/ConfirmModal";
-import { FiEdit, FiTrash2 } from "react-icons/fi";
+import { FiSearch, FiEdit, FiTrash2, FiAlertCircle } from "react-icons/fi";
 
 const CameraListPage = () => {
   const [cameras, setCameras] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCamera, setEditingCamera] = useState(null);
+
+  // success error message
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState(""); // fitur search
 
   // confirm modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -21,7 +27,7 @@ const CameraListPage = () => {
     try {
       const response = await axiosInstance.get("/cameras");
       setCameras(response.data.data);
-      console.log("repsonse dua", response.data.data);
+      // console.log("repsonse dua", response.data.data);
     } catch (error) {
       console.error("Error fetching cameras:", error);
     }
@@ -91,9 +97,18 @@ const CameraListPage = () => {
     return value; // Jika tidak dalam bentuk 1/n, tampilkan seperti semula
   };
 
+  const formatDecimal = (value, decimals = 1) => {
+    return parseFloat(value).toFixed(decimals);
+  };
+
+  // fitur search
+  const filteredCameras = cameras.filter(
+    (camera) => camera.camera_name.toLowerCase().includes(searchQuery.toLowerCase()) // Filter berdasarkan nama kamera
+  );
+
   // Pagination logic
-  const totalPages = Math.ceil(cameras.length / perPage);
-  const currentCameras = cameras.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const totalPages = Math.ceil(filteredCameras.length / perPage);
+  const currentCameras = filteredCameras.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   const handleEdit = (camera) => {
     setEditingCamera(camera);
@@ -124,68 +139,92 @@ const CameraListPage = () => {
       console.log("Data after conversion:", updatedCameraData);
 
       if (editingCamera) {
-        await axiosInstance.put(`/cameras/${editingCamera.id}`, updatedCameraData, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        setCameras((prevCameras) => prevCameras.map((c) => (c.id === editingCamera.id ? updatedCameraData : c)));
-        console.log("Updated:", updatedCameraData.camera_name);
+        try {
+          await axiosInstance.put(`/cameras/${editingCamera.id}`, updatedCameraData, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          setCameras((prevCameras) => prevCameras.map((c) => (c.id === editingCamera.id ? updatedCameraData : c)));
+          console.log("Updated:", updatedCameraData.camera_name);
+          setSuccessMessage("Data kamera telah berhasil diperbarui!");
+          setShowForm(false);
+          setEditingCamera(null);
+
+          setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (putError) {
+          console.error("Error saat mengupdate kamera:", putError);
+
+          // Tampilkan pesan error dari backend jika ada
+          if (putError.response && putError.response.data) {
+            setErrorMessage(
+              putError.response.data.message || "Data yang diinput tidak sesuai format. Silakan periksa kembali."
+            );
+          } else {
+            setErrorMessage("Terjadi kesalahan jaringan atau server. Silakan coba lagi.");
+          }
+
+          // Pastikan form tetap terbuka jika terjadi kesalahan
+          setShowForm(true);
+        }
       } else {
         const cameraDataWithUser = { ...updatedCameraData, user_id: 12 };
-        await axiosInstance.post("/cameras", cameraDataWithUser);
-        fetchCameras();
-      }
 
-      setShowForm(false);
-      setEditingCamera(null);
+        try {
+          await axiosInstance.post("/cameras", cameraDataWithUser);
+          fetchCameras();
+
+          setSuccessMessage("Data kamera telah berhasil disimpan!");
+
+          setShowForm(false);
+          setEditingCamera(null);
+
+          setTimeout(() => setSuccessMessage(""), 3000); // Hapus pesan setelah 3 detik
+        } catch (postError) {
+          console.error("Error saat menyimpan kamera:", postError);
+
+          // Tangkap pesan error dari backend jika ada
+          if (postError.response && postError.response.data) {
+            setErrorMessage(postError.response.data.message || "Gagal menyimpan kamera. Silakan periksa data Anda.");
+          } else {
+            setErrorMessage("Terjadi kesalahan jaringan atau server. Silakan coba lagi.");
+          }
+          setShowForm(true);
+        }
+      }
     } catch (error) {
       console.error("Error saving camera:", error);
     }
   };
 
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value); // Update nilai pencarian
+    setCurrentPage(1); // Reset ke halaman pertama saat melakukan pencarian
+  };
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Camera List</h1>
+      <div className="my-4">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Daftar Kamera</h1>
+        <p className="text-gray-600 text-base w-2/3">
+          Halaman ini menampilkan daftar semua kamera yang tersedia dalam database. Anda dapat menambahkan kamera baru,
+          mengedit informasi kamera yang ada, atau menghapus data yang tidak diperlukan.
+        </p>
+      </div>
 
-      {/* Dropdown untuk jumlah kamera per halaman */}
+      {/* Input Pencarian */}
       <div className="mb-4 flex justify-between items-center">
-        <div>
-          <label htmlFor="perPage" className="mr-2">
-            Show:
-          </label>
-          <select
-            id="perPage"
-            value={perPage}
-            onChange={(e) => setPerPage(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={cameras.length}>All</option>
-          </select>
-        </div>
-        <div>
-          {/* Pagination Controls */}
-          <div className="space-x-2 text-sm">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+        <div className="relative w-1/3">
+          <input
+            type="text"
+            placeholder="Search by camera name..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="border border-gray-300 rounded px-2 py-1 w-full pl-10"
+          />
+          <span className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400">
+            <FiSearch />
+          </span>
         </div>
         <div>
           <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-blue-500 text-white rounded">
@@ -215,12 +254,14 @@ const CameraListPage = () => {
                     <td key={col.key} className="border border-gray-300 p-2 text-xs text-center">
                       {col.key === "price"
                         ? formatCurrency(camera[col.key])
+                        : col.key === "continues_drive"
+                        ? formatDecimal(camera[col.key])
                         : col.key === "min_shutter_speed" || col.key === "max_shutter_speed"
                         ? formatShutterSpeed(camera[col.key])
                         : camera[col.key]}
                     </td>
                   ))}
-                  <td className="border m-auto p-4 flex space-x-2">
+                  <td className="border m-auto items-center justify-center p-4 flex space-x-2">
                     <button onClick={() => handleEdit(camera)} className="text-blue-500">
                       <FiEdit />
                     </button>
@@ -235,6 +276,48 @@ const CameraListPage = () => {
         </div>
       </div>
 
+      {/* Dropdown untuk jumlah kamera per halaman */}
+      <div className="mt-4 flex justify-between items-center">
+        <div className=" px-8"></div>
+        <div>
+          {/* Pagination Controls */}
+          <div className="space-x-2 text-sm">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="perPage" className="mr-2">
+            Show:
+          </label>
+          <select
+            id="perPage"
+            value={perPage}
+            onChange={(e) => setPerPage(Number(e.target.value))}
+            className="border border-gray-300 rounded px-2 py-1"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={filteredCameras.length}>All</option>
+          </select>
+        </div>
+      </div>
+
       {showForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50 ">
           <div className="bg-white p-4 rounded-xl w-2/3 max-h-[90vh] overflow-y-auto">
@@ -246,6 +329,11 @@ const CameraListPage = () => {
                 setEditingCamera(null);
               }}
             />
+            {errorMessage && (
+              <div className="bg-red-100 text-red-700 px-4 py-2 rounded mt-4">
+                <FiAlertCircle className="inline text-red-500 mr-1" /> {errorMessage}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -261,51 +349,14 @@ const CameraListPage = () => {
           }}
         />
       )}
+
+      {successMessage && (
+        <div className="fixed top-12 left-1/2 transform -translate-x-1/2 bg-green-200 text-green-700 px-4 py-2 rounded shadow-lg z-50">
+          {successMessage}
+        </div>
+      )}
     </div>
   );
 };
 
 export default CameraListPage;
-
-// const handleSave = async (cameraData) => {
-//   try {
-//     const updatedCameraData = convertToCorrectTypes(cameraData);
-//     console.log("Data to be saved or updated:", cameraData);
-
-//     if (editingCamera) {
-//       // Mode Edit: Update kamera yang ada
-//       console.log("editingCamera", editingCamera);
-//       const updatedCameraData = { ...cameraData, user_id: 12 };
-//       console.log("Updated cameraData yang akan dikirim:", updatedCameraData);
-//       await axiosInstance.put(`/cameras/${editingCamera.id}`, updatedCameraData, {
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//       });
-//       setCameras((prevCameras) => prevCameras.map((c) => (c.id === editingCamera.id ? updatedCameraData : c)));
-//       console.log("Updated:", updatedCameraData.camera_name);
-//     } else {
-//       // Mode Create: Tambah kamera baru
-//       const cameraDataWithUser = { ...updatedCameraData, user_id: 12 };
-//       await axiosInstance.post("/cameras", cameraDataWithUser);
-//       fetchCameras(); // Memuat ulang data kamera setelah menyimpan
-//     }
-
-//     // Reset form dan tutup modal
-//     setShowForm(false);
-//     setEditingCamera(null);
-//   } catch (error) {
-//     console.error("Error saving camera:", error);
-//   }
-// };
-
-// const handleSave = async (newCamera) => {
-//   try {
-//     const cameraDataWithUser = { ...newCamera, user_id: 12 };
-//     await axiosInstance.post("/cameras", cameraDataWithUser);
-//     fetchCameras(); // Panggil fetchCameras setelah kamera baru disimpan
-//     setShowForm(false); // Sembunyikan form setelah menyimpan
-//   } catch (error) {
-//     console.error("Error creating camera:", error);
-//   }
-// };
