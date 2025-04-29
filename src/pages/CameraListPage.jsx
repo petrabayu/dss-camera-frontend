@@ -27,6 +27,7 @@ const CameraListPage = () => {
     try {
       const response = await axiosInstance.get("/cameras");
       setCameras(response.data.data);
+      // console.log("repsonse dua", response.data.data);
     } catch (error) {
       console.error("Error fetching cameras:", error);
     }
@@ -204,7 +205,7 @@ const CameraListPage = () => {
   return (
     <div>
       <div className="my-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Daftar Kamera</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Daftar Kamera</h1>
         <p className="text-gray-600 text-base w-2/3">
           Halaman ini menampilkan daftar semua kamera yang tersedia dalam database. Anda dapat menambahkan kamera baru,
           mengedit informasi kamera yang ada, atau menghapus data yang tidak diperlukan.
