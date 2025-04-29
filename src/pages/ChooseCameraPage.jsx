@@ -5,7 +5,9 @@ import { FiSearch, FiHelpCircle } from "react-icons/fi";
 
 const ChooseCameraPage = () => {
   const [cameras, setCameras] = useState([]);
-  const [selectedCameras, setSelectedCameras] = useState(JSON.parse(localStorage.getItem("selectedCameras")) || []);
+  const [selectedCameras, setSelectedCameras] = useState(
+    JSON.parse(localStorage.getItem("selectedCameras")) || []
+  );
   const navigate = useNavigate();
 
   // fitur search
@@ -47,7 +49,6 @@ const ChooseCameraPage = () => {
 
   useEffect(() => {
     fetchCameras();
-    // console.log("Current Selected Camera IDs:", selectedCameras);
   }, [selectedCameras]);
 
   useEffect(() => {
@@ -87,13 +88,8 @@ const ChooseCameraPage = () => {
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedCameras(cameras.map((camera) => camera.id)); // Pilih semua kamera
-      // console.log(
-      //   "All Camera IDs Selected:",
-      //   cameras.map((camera) => camera.id)
-      // );
     } else {
       setSelectedCameras([]); // Hapus semua pilihan
-      // console.log("No Camera Selected");
     }
   };
 
@@ -104,7 +100,6 @@ const ChooseCameraPage = () => {
           ? prevSelected.filter((cameraId) => cameraId !== id) // Hapus jika sudah dipilih
           : [...prevSelected, id] // Tambahkan jika belum dipilih
     );
-    // console.log("Selected Camera IDs:", selectedCameras);
   };
 
   const handleNextPage = () => {
@@ -120,13 +115,16 @@ const ChooseCameraPage = () => {
       <div className="my-4">
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold text-gray-800">Pilih Kamera</h1>
-          <button onClick={handleModalToggle} className="text-blue-600 hover:text-blue-800  border-blue-600">
+          <button
+            onClick={handleModalToggle}
+            className="text-blue-600 hover:text-blue-800  border-blue-600"
+          >
             <FiHelpCircle size={18} />
           </button>
         </div>
         <p className="text-gray-600 text-base mt-2 w-2/3">
-          Pilih kamera alternatif yang ingin Anda bandingkan dan evaluasi. Kamera yang dipilih akan digunakan dalam
-          proses perhitungan untuk menentukan peringkat kamera terbaik.
+          Pilih kamera alternatif yang ingin Anda bandingkan dan evaluasi. Kamera yang dipilih akan
+          digunakan dalam proses perhitungan untuk menentukan peringkat kamera terbaik.
         </p>
       </div>
 
@@ -156,12 +154,17 @@ const ChooseCameraPage = () => {
                   <input
                     type="checkbox"
                     onChange={handleSelectAll}
-                    // checked={selectedCameras.length === cameras.length && cameras.length > 0} // real one
-                    checked={selectedCameras.length === filteredCameras.length && filteredCameras.length > 0}
+                    checked={
+                      selectedCameras.length === filteredCameras.length &&
+                      filteredCameras.length > 0
+                    }
                   />
                 </th>
                 {columns.map((col) => (
-                  <th key={col.key} className={`border border-gray-300 text-xs bg-gray-200 sticky top-0 p-1`}>
+                  <th
+                    key={col.key}
+                    className={`border border-gray-300 text-xs bg-gray-200 sticky top-0 p-1`}
+                  >
                     {col.label}
                   </th>
                 ))}
@@ -177,16 +180,6 @@ const ChooseCameraPage = () => {
                       onChange={() => handleSelectCamera(camera.id)}
                     />
                   </td>
-                  {/* real one
-              {cameras.map((camera, index) => (
-                <tr key={index}>
-                  <td className="border border-gray-300 p-2 text-xs text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedCameras.includes(camera.id)}
-                      onChange={() => handleSelectCamera(camera.id)}
-                    />
-                  </td> */}
                   {columns.map((col) => (
                     <td key={col.key} className="border border-gray-300 p-2 text-xs text-center">
                       {col.key === "price"
@@ -207,7 +200,9 @@ const ChooseCameraPage = () => {
       <div className="flex justify-center mt-4">
         <button
           className={`px-4 py-2 text-white rounded w-24 ${
-            selectedCameras.length > 1 ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 cursor-not-allowed"
+            selectedCameras.length > 1
+              ? "bg-blue-500 hover:bg-blue-600"
+              : "bg-gray-300 cursor-not-allowed"
           }`}
           disabled={selectedCameras.length < 2}
           onClick={handleNextPage}

@@ -53,8 +53,11 @@ const PairwiseSlider = ({ criterionA, criterionB, criteriaKey, rowIndex, colInde
         {/* Tooltip */}
         {showTooltip && (
           <div
-            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs font-semibold py-1 px-2 rounded"
-            style={{ left: `${((value + 9) / 18) * 100}%` }}
+            className="absolute -top-6 transform translate-x-1/2 bg-gray-800 text-white text-xs font-semibold py-1 px-2 rounded"
+            style={{
+              left: `${((value + 9) / 18) * 50}%`,
+              transform: `translate(-50%, 100%)`, // Menyesuaikan posisi tooltip lebih dekat
+            }}
           >
             {displayValue}
           </div>
