@@ -6,6 +6,7 @@ const HomePage = () => {
   const handleStartCalculation = () => {
     // Kosongkan local storage
     localStorage.removeItem("selectedCameras");
+    localStorage.removeItem("mainCriteriWeight");
     navigate("/choose-camera"); // Arahkan ke halaman perhitungan SPK atau halaman perbandingan
   };
   return (

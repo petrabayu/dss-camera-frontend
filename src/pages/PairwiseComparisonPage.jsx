@@ -156,10 +156,10 @@ const PairwiseComparisonPage = () => {
 
   // Fungsi untuk menangani perubahan nilai slider
   const handleSliderChange = (value, criteriaKey, rowIndex, colIndex) => {
-    // console.log(`Slider changed: ${criteriaKey} [${rowIndex}, ${colIndex}] = ${value}`);
-
     if (!pairwiseValues[criteriaKey] || !pairwiseValues[criteriaKey][rowIndex]) {
-      console.warn(`Invalid criteriaKey or indices: ${criteriaKey}, row ${rowIndex}, col ${colIndex}`);
+      console.warn(
+        `Invalid criteriaKey or indices: ${criteriaKey}, row ${rowIndex}, col ${colIndex}`
+      );
       return;
     }
 
@@ -229,8 +229,6 @@ const PairwiseComparisonPage = () => {
     const symmetricValues = getSymmetricPairwiseValues();
     const results = AHPServices.processAHP(symmetricValues);
 
-    // console.log("Results from AHP calculation:", results);
-
     setTimeout(() => {
       const updatedConsistencyStatus = {};
       let allConsistent = true;
@@ -252,16 +250,11 @@ const PairwiseComparisonPage = () => {
 
       // Cek apakah allConsistent bernilai true dan finalWeights tersedia
       if (allConsistent) {
+        localStorage.setItem("mainCriteriWeight", JSON.stringify(results.mainCriteria.weights));
         setFinalWeights(results.finalWeights); // Set finalWeights hanya jika allConsistent
-        // console.log("Final Weights after calculation:", results.finalWeights); // Pastikan finalWeights benar
       } else {
         console.log("Not all criteria are consistent. Final weights not set.");
       }
-
-      // console.log("Final Weights after calculation:", finalWeights);
-      // console.log("Consistency status for all groups:", updatedConsistencyStatus);
-      // console.log("Is all consistent:", allConsistent);
-
       setIsLoading(false); // Matikan overlay setelah proses selesai
     }, 1000);
   };
@@ -276,8 +269,6 @@ const PairwiseComparisonPage = () => {
       axiosInstance
         .post("/ahp-weights", flattenedWeights)
         .then((response) => {
-          // console.log("Bobot AHP berhasil disimpan:", response.data);
-          // alert("Data berhasil disimpan di database!");
           navigate("/ranking");
         })
         .catch((error) => {
@@ -294,13 +285,17 @@ const PairwiseComparisonPage = () => {
       <div className="my-4">
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold text-gray-800">Perbandingan Berpasangan</h1>
-          <button onClick={handleModalToggle} className="text-blue-600 hover:text-blue-800  border-blue-600">
+          <button
+            onClick={handleModalToggle}
+            className="text-blue-600 hover:text-blue-800  border-blue-600"
+          >
             <FiHelpCircle size={18} />
           </button>
         </div>
         <p className="text-gray-600 text-base w-2/3 mt-2">
-          Di halaman ini, Anda dapat membandingkan kriteria secara berpasangan untuk menentukan tingkat kepentingannya.
-          Proses ini akan membantu menghitung bobot setiap kriteria berdasarkan preferensi Anda.
+          Di halaman ini, Anda dapat membandingkan kriteria secara berpasangan untuk menentukan
+          tingkat kepentingannya. Proses ini akan membantu menghitung bobot setiap kriteria
+          berdasarkan preferensi Anda.
         </p>
         <div className="mt-4 bg-yellow-300 p-4 rounded-lg ">
           <p className="mb-2">
@@ -308,11 +303,12 @@ const PairwiseComparisonPage = () => {
           </p>
 
           <p className="text-gray-800 font-medium">
-            <span className="bg-green-300 font-semibold px-2 py-1 rounded">Hijau:</span> Perhitungan konsisten.
+            <span className="bg-green-300 font-semibold px-2 py-1 rounded">Hijau:</span> Perhitungan
+            konsisten.
           </p>
           <p className="text-gray-800 font-medium mt-4">
-            <span className="bg-red-500  font-semibold px-2 py-1 rounded">Merah:</span> Perhitungan belum konsisten,
-            harap periksa kembali nilai input.
+            <span className="bg-red-500  font-semibold px-2 py-1 rounded">Merah:</span> Perhitungan
+            belum konsisten, harap periksa kembali nilai input.
           </p>
         </div>
       </div>
@@ -323,7 +319,9 @@ const PairwiseComparisonPage = () => {
         return (
           <section
             key={index}
-            className={`mb-8 p-8 w-full border border-gray-300 rounded-lg shadow-lg ${renderBoxStyle(criteriaKey)}`}
+            className={`mb-8 p-8 w-full border border-gray-300 rounded-lg shadow-lg ${renderBoxStyle(
+              criteriaKey
+            )}`}
           >
             <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
             <div className="space-y-2">
@@ -361,7 +359,14 @@ const PairwiseComparisonPage = () => {
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
             <span className="text-blue-500 font-semibold text-lg">Processing...</span>
@@ -392,23 +397,31 @@ const PairwiseComparisonPage = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl">
-            <h2 className="text-xl font-semibold text-gray-800">Tips Mendapatkan Nilai Konsisten</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Tips Mendapatkan Nilai Konsisten
+            </h2>
             <p className="text-gray-600 mt-2">
-              Berikut adalah beberapa tips untuk memastikan nilai perbandingan Anda konsisten dan sesuai dengan
-              preferensi:
+              Berikut adalah beberapa tips untuk memastikan nilai perbandingan Anda konsisten dan
+              sesuai dengan preferensi:
             </p>
             <ul className="list-disc list-outside mt-4 px-4 space-y-2 text-gray-600">
               <li>Fokus pada satu kriteria utama saat memberikan nilai perbandingan.</li>
-              <li>Berikan nilai secara bertahap, hindari nilai yang terlalu ekstrem kecuali benar-benar dibutuhkan.</li>
               <li>
-                Pastikan preferensi Anda logis, misalnya jika A lebih penting dari B, dan B lebih penting dari C, maka A
-                harus lebih penting dari C.
+                Berikan nilai secara bertahap, hindari nilai yang terlalu ekstrem kecuali
+                benar-benar dibutuhkan.
               </li>
               <li>
-                Jika nilai konsistensi masih merah, evaluasi ulang apakah preferensi Anda sudah mencerminkan kebutuhan
-                yang sebenarnya.
+                Pastikan preferensi Anda logis, misalnya jika A lebih penting dari B, dan B lebih
+                penting dari C, maka A harus lebih penting dari C.
               </li>
-              <li>Gunakan slider dengan hati-hati, perhatikan perbandingan antar kriteria yang saling terkait.</li>
+              <li>
+                Jika nilai konsistensi masih merah, evaluasi ulang apakah preferensi Anda sudah
+                mencerminkan kebutuhan yang sebenarnya.
+              </li>
+              <li>
+                Gunakan slider dengan hati-hati, perhatikan perbandingan antar kriteria yang saling
+                terkait.
+              </li>
             </ul>
             <div className="mt-4 text-right">
               <button
