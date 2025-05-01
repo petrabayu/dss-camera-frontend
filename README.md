@@ -10,11 +10,11 @@ A web-based Decision Support System application designed to assist users in sele
 
 ## **Screenshot**
 
-![Pairwise Comparison Page](src\assets\pairwise-comparison.webp)
+![Pairwise Comparison Page](src/assets/pairwise-comparison.webp)
 
-![Ranking Page](src\assets\ranking-1.webp)
+![Ranking Page](src/assets/ranking-1.webp)
 
-![Ranking Page](src\assets\ranking-2.webp)
+![Ranking Page](src/assets/ranking-2.webp)
 
 ## **Feature**
 
