@@ -10,11 +10,11 @@ Aplikasi Sistem Pendukung Keputusan berbasis web yang dirancang untuk membantu p
 
 ## **Tangkapan Layar**
 
-![Halaman Perbandingan Berpasangan](src\assets\pairwise-comparison.webp)
+![Halaman Perbandingan Berpasangan](src/assets/pairwise-comparison.webp)
 
-![Halaman Rangking](src\assets\ranking-1.webp)
+![Halaman Rangking](src/assets/ranking-1.webp)
 
-![Halaman Rangking](src\assets\ranking-2.webp)
+![Halaman Rangking](src/assets/ranking-2.webp)
 
 ## **Fitur**
 
